@@ -1,4 +1,4 @@
-package com.huster.myapplication
+package com.huster.myapplication.ui.otp
 
 import android.content.Context
 import android.content.Intent
@@ -10,6 +10,11 @@ import com.google.firebase.FirebaseException
 import com.google.firebase.FirebaseTooManyRequestsException
 import com.google.firebase.auth.*
 import com.huster.myapplication.databinding.ActivityVerifyOtpCodeBinding
+import com.huster.myapplication.models.UserModel
+import com.huster.myapplication.showErrorToast
+import com.huster.myapplication.showToast
+import com.huster.myapplication.ui.personal.EnterUserInfoActivity
+import com.huster.myapplication.ui.personal.UserManager
 import java.util.concurrent.TimeUnit
 
 class VerifyOtpCodeActivity : AppCompatActivity() {
@@ -158,7 +163,16 @@ class VerifyOtpCodeActivity : AppCompatActivity() {
                     val user: FirebaseUser? = task.result?.user
                     // Update UI
                     user?.let {
-                        showToast("Thành công\nId: ${user.uid}")
+                        UserManager.save(this, UserModel(user.uid, user.phoneNumber), object : UserManager.UpdateUserListener{
+                            override fun onSuccess() {
+                                EnterUserInfoActivity.start(this@VerifyOtpCodeActivity)
+                            }
+
+                            override fun onFail(e: Exception?) {
+                                showErrorToast(e?.message)
+                            }
+                        })
+
                     }
 
                 } else {
@@ -172,8 +186,13 @@ class VerifyOtpCodeActivity : AppCompatActivity() {
     }
 
     private fun verifyCode(smsCode: String) {
-        val credential = PhoneAuthProvider.getCredential(storedVerificationId, smsCode)
-        signInWithPhoneAuthCredential(credential)
+        try {
+            val credential = PhoneAuthProvider.getCredential(storedVerificationId, smsCode)
+            signInWithPhoneAuthCredential(credential)
+        } catch (e: Exception) {
+            e.printStackTrace()
+            showErrorToast("Vui lòng thử lại")
+        }
     }
 }
 
